@@ -1,5 +1,13 @@
 const Address = () => {
-  return (
+const ADDRESS = 'г. Избербаш, ул. Гаджиева, д. 10';
+
+
+const LON = 47.873400;
+const LAT = 42.557500;
+const ZOOM = 16;
+
+const MAP_SRC = `https://yandex.ru/map-widget/v1/?ll=${LON}%2C${LAT}&z=${ZOOM}&pt=${LON},${LAT},pm2rdm`;
+return (
     <section id="address" className="address">
       <div className="address__container">
         <h2 className="section-title">АДРЕС</h2>
@@ -18,18 +26,14 @@ const Address = () => {
           <div className="address__map-wrapper">
             <iframe
               className="address__map"
-              src="https://yandex.ru/map-widget/v1/?um=constructor%3A1d2a3e7b5f0c4d6a8b9e0f1c2d3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1&amp;source=constructor"
+              title={`Карта: ${ADDRESS}`}
+              src={MAP_SRC}
               width="100%"
               height="400"
-              frameBorder="0"
-              title="Карта — Чёрный Бритва"
+              style={{ border: 0 }}
               loading="lazy"
+              allowFullScreen
             />
-            {/*
-              Если iframe с Яндекс-картой не отображается (например, в dev-режиме
-              блокируется), оставьте только текстовый адрес выше. Для продакшена
-              получите свой iframe-код на https://yandex.ru/map-widget/
-            */}
           </div>
         </div>
       </div>

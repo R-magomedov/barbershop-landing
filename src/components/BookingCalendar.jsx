@@ -45,7 +45,6 @@ function BookingCalendar({ date, time, onDateChange, onTimeChange, errors, now }
       </fieldset>
       <fieldset className="booking-calendar__group booking-calendar__times" tabIndex={-1} aria-invalid={Boolean(errors.time)} aria-describedby={errors.time ? 'time-error' : 'time-hint'}>
         <legend className="booking-calendar__title">Выберите время <span className="booking__required">*</span></legend>
-        <p id="time-hint" className="booking-calendar__hint">{date ? '' : 'Сначала выберите дату'}</p>
         <div className="booking-calendar__slots" role="group" aria-label="Время записи">
           {TIME_SLOTS.map((slot) => (
             <button key={slot} type="button" className="booking-calendar__slot" disabled={!isTimeAvailable(date, slot, now)} aria-pressed={time === slot} onClick={() => onTimeChange(slot)}>{slot}</button>

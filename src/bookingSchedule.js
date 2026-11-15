@@ -1,6 +1,6 @@
 // Временное расписание для интерфейса. Занятость Google Календаря пока не учитывается.
-export const TIME_SLOTS = Array.from({ length: 22 }, (_, index) => {
-  const minutes = 10 * 60 + index * 30;
+export const TIME_SLOTS = Array.from({ length: 9 }, (_, index) => {
+  const minutes = 10 * 60 + index * 60;
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 });
 
