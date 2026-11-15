@@ -1,157 +1,86 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import BookingCalendar from './BookingCalendar';
+import { isDateAvailable, isTimeAvailable } from '../bookingSchedule';
 
-// Доступные услуги барбершопа
-const services = [
-  'Стрижка головы',
-  'Окантовка',
-  'Моделирование бороды',
-  'Камуфляж седины головы',
-];
+const services = ['Стрижка головы', 'Окантовка', 'Моделирование бороды', 'Камуфляж седины головы'];
+const initialState = { service: '', name: '', phone: '', date: '', time: '' };
 
 const BookingForm = () => {
-  // Начальное состояние формы
-  const initialState = {
-    service: '',
-    name: '',
-    phone: '',
-    date: '',
-  };
-
   const [form, setForm] = useState(initialState);
   const [errors, setErrors] = useState({});
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isChecked, setIsChecked] = useState(false);
+  const [now, setNow] = useState(() => new Date());
 
-  // Обработчик изменения любого поля формы
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    // Сбрасываем ошибку для текущего поля при вводе
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: '' });
-    }
+  // Обновляем прошедшие слоты, даже если страница долго остаётся открытой.
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const updateField = (name, value) => {
+    setForm((current) => ({ ...current, [name]: value }));
+    setErrors((current) => ({ ...current, [name]: '' }));
+    setIsChecked(false);
   };
 
-  // Валидация формы перед отправкой
-  const validate = () => {
+  const changeDate = (date) => {
+    setForm((current) => ({ ...current, date, time: current.date === date ? current.time : '' }));
+    setErrors((current) => ({ ...current, date: '', time: '' }));
+    setIsChecked(false);
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const currentTime = new Date();
     const newErrors = {};
-
-    // Обязательные поля
-    if (!form.service) newErrors.service = 'Выберите услугу';
+    if (!services.includes(form.service)) newErrors.service = 'Выберите услугу';
     if (!form.name.trim()) newErrors.name = 'Введите имя';
-    if (!form.phone.trim()) newErrors.phone = 'Введите номер телефона';
-
-    // Телефон: минимум 10 цифр (отбрасываем все не-цифры для проверки)
-    const digitsOnly = form.phone.replace(/\D/g, '');
-    if (digitsOnly.length < 10) {
-      newErrors.phone = 'Номер должен содержать минимум 10 цифр';
-    }
-
+    if (form.phone.replace(/\D/g, '').length < 10) newErrors.phone = 'Номер должен содержать минимум 10 цифр';
     if (!form.date) newErrors.date = 'Выберите дату';
+    else if (!isDateAvailable(form.date, currentTime)) newErrors.date = 'Выберите будущую дату с доступным временем';
+    if (!form.time) newErrors.time = 'Выберите время';
+    else if (!isTimeAvailable(form.date, form.time, currentTime)) newErrors.time = 'Это время уже недоступно. Выберите другое';
 
+    setNow(currentTime);
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Отправка формы
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!validate()) return;
-
-    // Показываем сообщение об успехе
-    setIsSubmitted(true);
-    setForm(initialState);
-
-    // Скрываем сообщение через 4 секунды
-    setTimeout(() => setIsSubmitted(false), 4000);
+    setIsChecked(Object.keys(newErrors).length === 0);
+    if (Object.keys(newErrors).length) {
+      // После отрисовки ошибок переводим фокус к первому проблемному полю.
+      const element = event.currentTarget;
+      window.requestAnimationFrame(() => element.querySelector('[aria-invalid="true"]')?.focus());
+    }
   };
 
   return (
     <section id="booking" className="booking">
       <div className="booking__container">
         <h2 className="section-title">ЗАПИСЬ ОНЛАЙН</h2>
-
-        {/* Сообщение об успешной отправке */}
-        {isSubmitted && (
-          <div className="booking__success">
-            ✓ Заявка отправлена! Мы свяжемся с вами для подтверждения.
-          </div>
-        )}
-
-        <form className="booking__form" onSubmit={handleSubmit}>
-          {/* Поле: Услуга (select) */}
+        <form className="booking__form" onSubmit={handleSubmit} noValidate>
+          <p className="booking__notice">Пока это демоформа: можно выбрать дату и время, но заявка ещё не отправляется.</p>
           <div className="booking__field">
-            <label className="booking__label" htmlFor="service">
-              Услуга <span className="booking__required">*</span>
-            </label>
-            <select
-              id="service"
-              name="service"
-              value={form.service}
-              onChange={handleChange}
-              className={`booking__select ${errors.service ? 'booking__select--error' : ''}`}
-            >
+            <label className="booking__label" htmlFor="service">Услуга <span className="booking__required">*</span></label>
+            <select id="service" name="service" required value={form.service} onChange={(event) => updateField('service', event.target.value)} aria-invalid={Boolean(errors.service)} aria-describedby={errors.service ? 'service-error' : undefined} className={`booking__select ${errors.service ? 'booking__select--error' : ''}`}>
               <option value="">Выберите услугу</option>
-              {services.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
+              {services.map((service) => <option key={service} value={service}>{service}</option>)}
             </select>
-            {errors.service && <span className="booking__error">{errors.service}</span>}
+            {errors.service && <span id="service-error" className="booking__error">{errors.service}</span>}
           </div>
-
-          {/* Поле: Имя */}
           <div className="booking__field">
-            <label className="booking__label" htmlFor="name">
-              Имя <span className="booking__required">*</span>
-            </label>
-            <input
-              id="name"
-              type="text"
-              name="name"
-              placeholder="Ваше имя"
-              value={form.name}
-              onChange={handleChange}
-              className={`booking__input ${errors.name ? 'booking__input--error' : ''}`}
-            />
-            {errors.name && <span className="booking__error">{errors.name}</span>}
+            <label className="booking__label" htmlFor="name">Имя <span className="booking__required">*</span></label>
+            <input id="name" type="text" name="name" autoComplete="given-name" required placeholder="Ваше имя" value={form.name} onChange={(event) => updateField('name', event.target.value)} aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'name-error' : undefined} className={`booking__input ${errors.name ? 'booking__input--error' : ''}`} />
+            {errors.name && <span id="name-error" className="booking__error">{errors.name}</span>}
           </div>
-
-          {/* Поле: Телефон */}
           <div className="booking__field">
-            <label className="booking__label" htmlFor="phone">
-              Телефон <span className="booking__required">*</span>
-            </label>
-            <input
-              id="phone"
-              type="tel"
-              name="phone"
-              placeholder="+7 (___) ___-__-__"
-              value={form.phone}
-              onChange={handleChange}
-              className={`booking__input ${errors.phone ? 'booking__input--error' : ''}`}
-            />
-            {errors.phone && <span className="booking__error">{errors.phone}</span>}
+            <label className="booking__label" htmlFor="phone">Телефон <span className="booking__required">*</span></label>
+            <input id="phone" type="tel" name="phone" autoComplete="tel" required placeholder="+7 (___) ___-__-__" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? 'phone-error' : undefined} className={`booking__input ${errors.phone ? 'booking__input--error' : ''}`} />
+            {errors.phone && <span id="phone-error" className="booking__error">{errors.phone}</span>}
           </div>
-
-          {/* Поле: Дата */}
-          <div className="booking__field">
-            <label className="booking__label" htmlFor="date">
-              Дата <span className="booking__required">*</span>
-            </label>
-            <input
-              id="date"
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              className={`booking__input ${errors.date ? 'booking__input--error' : ''}`}
-            />
-            {errors.date && <span className="booking__error">{errors.date}</span>}
+          <BookingCalendar date={form.date} time={form.time} onDateChange={changeDate} onTimeChange={(time) => updateField('time', time)} errors={errors} now={now} />
+          <button type="submit" className="btn btn--primary btn--full">Записаться</button>
+          <div role="status" aria-live="polite">
+            {Object.values(errors).some(Boolean) && <p className="booking__error">Проверьте отмеченные поля.</p>}
+            {isChecked && <p className="booking__success">Данные заполнены верно. Это демопроверка: заявка не отправлена. Подключение записи — следующий шаг.</p>}
           </div>
-
-          {/* Кнопка отправки */}
-          <button type="submit" className="btn btn--primary btn--full">
-            ОТПРАВИТЬ ЗАЯВКУ
-          </button>
         </form>
       </div>
     </section>

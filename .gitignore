@@ -2,3 +2,9 @@ node_modules/
 dist/
 .env
 .DS_Store
+
+.vercel
+
+/README.md
+/AGENTS.md
+/STATUS.md

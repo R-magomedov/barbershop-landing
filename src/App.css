@@ -407,6 +407,158 @@ a {
   color: #e74c3c;
 }
 
+.booking__notice,
+.booking-calendar__hint {
+  font-size: 0.8rem;
+  color: #b3b3b3;
+}
+
+.booking-calendar {
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+}
+
+.booking-calendar__group {
+  min-width: 0;
+  border: 0;
+}
+
+.booking-calendar__title {
+  margin-bottom: 16px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.booking-calendar__months,
+.booking-calendar__slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.booking-calendar button {
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.booking-calendar__month {
+  padding: 8px 4px;
+  text-transform: capitalize;
+}
+
+.booking-calendar__month span {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.booking-calendar__days {
+  width: 100%;
+  table-layout: fixed;
+  border-spacing: 0 4px;
+  margin: 16px 0 20px;
+  text-align: center;
+}
+
+.booking-calendar__days th {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #b3b3b3;
+  padding-bottom: 8px;
+}
+
+.booking-calendar__days th:nth-last-child(-n+2) {
+  color: var(--color-accent);
+}
+
+.booking-calendar .booking-calendar__day {
+  width: 100%;
+  max-width: 44px;
+  border-radius: 50%;
+}
+
+.booking-calendar .booking-calendar__slot {
+  background: var(--color-bg-card);
+  font-variant-numeric: tabular-nums;
+}
+
+.booking-calendar button:not(:disabled):hover {
+  border-color: var(--color-accent);
+  background: rgba(201, 162, 75, 0.12);
+}
+
+.booking-calendar button[aria-current="date"] {
+  border-color: var(--color-accent);
+}
+
+.booking-calendar button[aria-pressed="true"],
+.booking-calendar button[aria-pressed="true"]:hover {
+  background: var(--color-accent);
+  color: #111;
+  font-weight: 600;
+}
+
+.booking-calendar button:disabled {
+  color: #666;
+  cursor: not-allowed;
+}
+
+.booking-calendar__times .booking-calendar__hint {
+  margin: -6px 0 12px;
+}
+
+.booking-calendar__summary {
+  margin: 20px 0 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-accent);
+  font-size: 0.9rem;
+}
+
+.booking__form :focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.booking-calendar__group[aria-invalid="true"] {
+  box-shadow: 0 0 0 1px #e74c3c;
+  border-radius: var(--radius);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 400px) {
+  .booking-calendar {
+    padding: 12px;
+  }
+
+  .booking-calendar__months,
+  .booking-calendar__slots {
+    gap: 4px;
+  }
+
+  .booking-calendar .booking-calendar__day {
+    min-height: 40px;
+  }
+}
+
 /* ============================================
    PRICE (прайс)
    ============================================ */
