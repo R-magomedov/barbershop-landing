@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import BookingCalendar from './BookingCalendar';
-import { isDateAvailable, isTimeAvailable } from '../bookingSchedule';
+import { BOOKING_SERVICES, isDateAvailable, isTimeAvailable } from '../bookingSchedule';
+import { useAvailableSlots } from '../useAvailableSlots';
 
-const services = ['Стрижка головы', 'Окантовка', 'Моделирование бороды', 'Камуфляж седины головы'];
 const initialState = { service: '', name: '', phone: '', date: '', time: '' };
 
 const BookingForm = () => {
@@ -10,6 +10,8 @@ const BookingForm = () => {
   const [errors, setErrors] = useState({});
   const [isChecked, setIsChecked] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  // Хук сам загружает расписание при изменении даты или id услуги.
+  const availability = useAvailableSlots(form.date, form.service);
 
   // Обновляем прошедшие слоты, даже если страница долго остаётся открытой.
   useEffect(() => {
@@ -18,8 +20,9 @@ const BookingForm = () => {
   }, []);
 
   const updateField = (name, value) => {
-    setForm((current) => ({ ...current, [name]: value }));
-    setErrors((current) => ({ ...current, [name]: '' }));
+    // Услуги имеют разную длительность: старое время нельзя сохранять вслепую.
+    setForm((current) => ({ ...current, [name]: value, ...(name === 'service' ? { time: '' } : {}) }));
+    setErrors((current) => ({ ...current, [name]: '', ...(name === 'service' ? { time: '' } : {}) }));
     setIsChecked(false);
   };
 
@@ -33,13 +36,16 @@ const BookingForm = () => {
     event.preventDefault();
     const currentTime = new Date();
     const newErrors = {};
-    if (!services.includes(form.service)) newErrors.service = 'Выберите услугу';
+    if (!BOOKING_SERVICES.some((service) => service.id === form.service)) newErrors.service = 'Выберите услугу';
     if (!form.name.trim()) newErrors.name = 'Введите имя';
     if (form.phone.replace(/\D/g, '').length < 10) newErrors.phone = 'Номер должен содержать минимум 10 цифр';
     if (!form.date) newErrors.date = 'Выберите дату';
     else if (!isDateAvailable(form.date, currentTime)) newErrors.date = 'Выберите будущую дату с доступным временем';
     if (!form.time) newErrors.time = 'Выберите время';
     else if (!isTimeAvailable(form.date, form.time, currentTime)) newErrors.time = 'Это время уже недоступно. Выберите другое';
+    else if (availability.status !== 'success' || !availability.slots.includes(form.time)) {
+      newErrors.time = 'Дождитесь загрузки расписания и выберите свободное время';
+    }
 
     setNow(currentTime);
     setErrors(newErrors);
@@ -56,12 +62,12 @@ const BookingForm = () => {
       <div className="booking__container">
         <h2 className="section-title">ЗАПИСЬ ОНЛАЙН</h2>
         <form className="booking__form" onSubmit={handleSubmit} noValidate>
-          <p className="booking__notice">Пока это демоформа: можно выбрать дату и время, но заявка ещё не отправляется.</p>
+          <p className="booking__notice">Свободное время загружается из календаря мастера. Отправка заявки пока не подключена.</p>
           <div className="booking__field">
             <label className="booking__label" htmlFor="service">Услуга <span className="booking__required">*</span></label>
             <select id="service" name="service" required value={form.service} onChange={(event) => updateField('service', event.target.value)} aria-invalid={Boolean(errors.service)} aria-describedby={errors.service ? 'service-error' : undefined} className={`booking__select ${errors.service ? 'booking__select--error' : ''}`}>
               <option value="">Выберите услугу</option>
-              {services.map((service) => <option key={service} value={service}>{service}</option>)}
+              {BOOKING_SERVICES.map((service) => <option key={service.id} value={service.id}>{service.label}</option>)}
             </select>
             {errors.service && <span id="service-error" className="booking__error">{errors.service}</span>}
           </div>
@@ -75,11 +81,24 @@ const BookingForm = () => {
             <input id="phone" type="tel" name="phone" autoComplete="tel" required placeholder="+7 (___) ___-__-__" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? 'phone-error' : undefined} className={`booking__input ${errors.phone ? 'booking__input--error' : ''}`} />
             {errors.phone && <span id="phone-error" className="booking__error">{errors.phone}</span>}
           </div>
-          <BookingCalendar date={form.date} time={form.time} onDateChange={changeDate} onTimeChange={(time) => updateField('time', time)} errors={errors} now={now} />
+          <BookingCalendar
+            date={form.date}
+            time={form.time}
+            serviceId={form.service}
+            onDateChange={changeDate}
+            onTimeChange={(time) => updateField('time', time)}
+            errors={errors}
+            now={now}
+            availability={availability}
+            onReload={() => {
+              updateField('time', '');
+              availability.reload();
+            }}
+          />
           <button type="submit" className="btn btn--primary btn--full">Записаться</button>
           <div role="status" aria-live="polite">
             {Object.values(errors).some(Boolean) && <p className="booking__error">Проверьте отмеченные поля.</p>}
-            {isChecked && <p className="booking__success">Данные заполнены верно. Это демопроверка: заявка не отправлена. Подключение записи — следующий шаг.</p>}
+            {isChecked && <p className="booking__success">Данные заполнены верно. Заявка ещё не отправлена: создание записи подключим следующим шагом.</p>}
           </div>
         </form>
       </div>

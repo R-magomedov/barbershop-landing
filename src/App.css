@@ -524,6 +524,13 @@ a {
   font-size: 0.9rem;
 }
 
+.booking-calendar .booking-calendar__reload {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-color: var(--color-border);
+  color: var(--color-accent);
+}
+
 .booking__form :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
