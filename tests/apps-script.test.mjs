@@ -1,3 +1,4 @@
+import { BOOKING_SERVICES } from '../src/bookingSchedule.js';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
@@ -33,10 +34,11 @@ console.log('PASS: full Apps Script mock suite — no CAPTCHA configuration, hon
 
 
 // Проверки расписания отдельно от маршрута записи: границы интервалов и длительности.
-for (const [serviceId, minutes] of [['haircut',60],['edging',30],['beard',30],['camouflage',40]]) {
+for (const { id: serviceId, duration: minutes, label } of BOOKING_SERVICES) {
   const f = fixture();
   const result = f.post({...f.data, serviceId});
   assert.equal(result.ok,true);
+  assert.equal(f.events[0].getTitle(), label + ' — Тест');
   assert.equal(f.events[0].getEndTime() - f.events[0].getStartTime(), minutes * 60000);
 }
 {
@@ -63,4 +65,13 @@ for (const [serviceId, minutes] of [['haircut',60],['edging',30],['beard',30],['
     if(i===30) assert.equal(result.code,'RATE_LIMITED');
     else assert.notEqual(result.code,'RATE_LIMITED');
   }
+}
+
+// Комплекс длится 90 минут: не помещается в 18:00 и пересекает следующий час.
+{
+  const f = fixture();
+  assert.equal(f.ctx.getAvailableSlots('2026-11-17', 'fullService').includes('18:00'), false);
+  assert.equal(f.post({...f.data, serviceId: 'fullService'}).ok, true);
+  assert.equal(f.ctx.getAvailableSlots('2026-11-17', 'haircut').includes('11:00'), false);
+  assert.equal(f.ctx.getAvailableSlots('2026-11-17', 'haircut').includes('12:00'), true);
 }

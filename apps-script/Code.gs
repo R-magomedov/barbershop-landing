@@ -2,10 +2,14 @@
 const BOOKING_CONFIG = {
   timeZone: 'Europe/Moscow',
   services: {
-    haircut: { title: 'Стрижка головы', minutes: 60 },
+    haircut: { title: 'Мужская стрижка', minutes: 60 },
+    // Старый id сохраняем для подтверждения ранее созданных заявок.
     edging: { title: 'Окантовка', minutes: 30 },
-    beard: { title: 'Моделирование бороды', minutes: 30 },
-    camouflage: { title: 'Камуфляж седины головы', minutes: 40 }
+    beard: { title: 'Стрижка бороды / окантовка', minutes: 30 },
+    beardCamouflage: { title: 'Камуфляж седины (борода)', minutes: 30 },
+    camouflage: { title: 'Камуфляж седины (голова)', minutes: 40 },
+    fullService: { title: 'Комплекс «Под ключ»', minutes: 90 },
+    kidsHaircut: { title: 'Детская стрижка (до 12 лет)', minutes: 60 }
   },
   perMinute: 5, perDay: 30, perPhonePerDay: 2,
   retentionDays: 120

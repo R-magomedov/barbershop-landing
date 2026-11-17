@@ -2,10 +2,12 @@ export const BOOKING_TIME_ZONE = 'Europe/Moscow';
 
 // id совпадает с обозначением услуги в Apps Script; label видит посетитель.
 export const BOOKING_SERVICES = [
-  { id: 'haircut', label: 'Стрижка головы', duration: 60 },
-  { id: 'edging', label: 'Окантовка', duration: 30 },
-  { id: 'beard', label: 'Моделирование бороды', duration: 30 },
-  { id: 'camouflage', label: 'Камуфляж седины головы', duration: 40 },
+  { id: 'haircut', label: 'Мужская стрижка', duration: 60, price: '1 500 ₽', desc: 'Классика, полустрижка, машинка' },
+  { id: 'beard', label: 'Стрижка бороды / окантовка', duration: 30, price: '800 ₽', desc: 'Моделирование формы, расчётка' },
+  { id: 'beardCamouflage', label: 'Камуфляж седины (борода)', duration: 30, price: '1 200 ₽', desc: 'Нюансное тонирование, естественный результат' },
+  { id: 'camouflage', label: 'Камуфляж седины (голова)', duration: 40, price: '2 000 ₽', desc: 'Полное или частичное тонирование' },
+  { id: 'fullService', label: 'Комплекс «Под ключ»', duration: 90, price: '3 000 ₽', desc: 'Стрижка + борода + уход' },
+  { id: 'kidsHaircut', label: 'Детская стрижка (до 12 лет)', duration: 60, price: '1 000 ₽', desc: 'Бережный подход, игровая атмосфера' },
 ];
 
 // Это сетка кнопок, а не список свободных часов. Занятость приходит с сервера.
