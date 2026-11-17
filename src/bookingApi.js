@@ -44,20 +44,19 @@ export async function fetchAvailableSlots(date, serviceId, signal) {
 const bookingErrors = {
   SLOT_UNAVAILABLE: 'Это время уже занято. Выберите другое свободное время.',
   VALIDATION_ERROR: 'Проверьте данные заявки и выбранное время.',
-  CHALLENGE_FAILED: 'Повторите проверку безопасности и отправьте заявку ещё раз.',
+  CHALLENGE_FAILED: 'Не удалось отправить заявку. Обновите страницу или свяжитесь с мастером.',
   RATE_LIMITED: 'Слишком много попыток. Попробуйте позже или свяжитесь с мастером.',
   SERVICE_UNAVAILABLE: 'Онлайн-запись временно недоступна. Свяжитесь с мастером.',
   REQUEST_MISMATCH: 'Данные этой заявки изменились. Свяжитесь с мастером для проверки.',
   BOOKING_UNCERTAIN: 'Статус заявки требует проверки. Свяжитесь с мастером перед новой записью.',
 };
 
-export async function submitBooking(booking, turnstileToken, signal) {
+export async function submitBooking(booking, signal) {
   const response = await fetch(getWebAppUrl(), {
     method: 'POST', credentials: 'omit', signal,
     headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
     // Это JSON внутри простого текстового запроса, как в проверенном POST.
-    // Передаём одноразовый Turnstile-токен, а не секрет или тестовый ключ.
-    body: JSON.stringify({ ...booking, action: 'book', turnstileToken }),
+    body: JSON.stringify({ ...booking, action: 'book' }),
   });
   if (!response.ok) throw new Error('Не удалось прочитать подтверждение записи');
   const data = await response.json();

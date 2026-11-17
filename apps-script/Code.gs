@@ -50,7 +50,7 @@ function doPost(e) {
     if (data.website) failBooking_('CHALLENGE_FAILED', 'Запрос отклонён');
 
     const properties = PropertiesService.getScriptProperties();
-    // Для уже известной заявки новый CAPTCHA-токен не нужен. createBooking
+    // Для уже известной заявки createBooking
     // сверит отпечаток всех полей и только вернёт/восстановит прежний результат.
     // Даже неопределённую старую попытку эта ветка не создаёт заново.
     const booking = validateBooking(data, true);
@@ -59,8 +59,7 @@ function doPost(e) {
     }
 
     validateBooking(data, false);
-    verifyBookingChallenge_(data.turnstileToken, booking.requestId);
-    enforceBookingLimits_(booking, data.turnstileToken);
+    enforceBookingLimits_(booking);
     return jsonOutput_(createBooking(booking));
   } catch (error) {
     return jsonOutput_(publicBookingError_(error));
@@ -94,41 +93,7 @@ function sha256_(text) {
     .map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
 }
 
-function verifyBookingChallenge_(token, requestId) {
-  if (typeof token !== 'string' || !token || token.length > 2048) {
-    failBooking_('CHALLENGE_FAILED', 'Пройдите проверку безопасности');
-  }
-  const properties = PropertiesService.getScriptProperties();
-  const secret = properties.getProperty('TURNSTILE_SECRET_KEY');
-  const hosts = (properties.getProperty('BOOKING_ALLOWED_HOSTNAMES') || '')
-    .split(',').map((host) => host.trim().toLowerCase()).filter(Boolean);
-  // Официальные dummy-ключи подходят для локальных тестов, но не для публикации.
-  if (!secret || secret.length < 20 || /^[123]x0{20,}/.test(secret) || !hosts.length) {
-    failBooking_('SERVICE_UNAVAILABLE', 'Защита формы не настроена');
-  }
-  let response;
-  // Повтор Siteverify с тем же токеном использует тот же UUID. Новый токен
-  // получает другой UUID, даже если это повтор прежней заявки после ошибки.
-  const hash = sha256_(requestId + ':' + token);
-  const verificationId = hash.slice(0, 8) + '-' + hash.slice(8, 12) + '-4' +
-    hash.slice(13, 16) + '-8' + hash.slice(17, 20) + '-' + hash.slice(20, 32);
-  try {
-    response = UrlFetchApp.fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'post', muteHttpExceptions: true,
-      payload: { secret: secret, response: token, idempotency_key: verificationId }
-    });
-  } catch (error) { failBooking_('SERVICE_UNAVAILABLE', 'Проверка безопасности недоступна'); }
-  if (response.getResponseCode() !== 200) failBooking_('SERVICE_UNAVAILABLE', 'Проверка безопасности недоступна');
-  let verification;
-  try { verification = JSON.parse(response.getContentText()); }
-  catch (error) { failBooking_('SERVICE_UNAVAILABLE', 'Неверный ответ проверки'); }
-  // Токен должен быть выдан нашему сайту и именно для формы записи.
-  if (verification.success !== true || !hosts.includes(verification.hostname) || verification.action !== 'booking') {
-    failBooking_('CHALLENGE_FAILED', 'Проверка безопасности не пройдена');
-  }
-}
-
-function enforceBookingLimits_(booking, token) {
+function enforceBookingLimits_(booking) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(3000)) failBooking_('SERVER_ERROR', 'Сервис занят');
   try {
@@ -143,14 +108,6 @@ function enforceBookingLimits_(booking, token) {
       if (Number.isFinite(saved.createdAt) && now - saved.createdAt > ttl) properties.deleteProperty(key);
     });
 
-    const usedKey = 'TURNSTILE_USED_' + sha256_(token);
-    const used = properties.getProperty(usedKey);
-    if (used) {
-      if (JSON.parse(used).requestId !== booking.requestId) {
-        failBooking_('CHALLENGE_FAILED', 'Токен уже использован другой заявкой');
-      }
-      return; // Повтор той же попытки не расходует лимит ещё раз.
-    }
     const day = Utilities.formatDate(new Date(now), BOOKING_CONFIG.timeZone, 'yyyy-MM-dd');
     const minute = Math.floor(now / 60000);
     let rate = JSON.parse(properties.getProperty('PUBLIC_BOOKING_RATE') || 'null');
@@ -165,9 +122,6 @@ function enforceBookingLimits_(booking, token) {
     rate.total++;
     rate.phones[phoneKey] = (rate.phones[phoneKey] || 0) + 1;
     properties.setProperty('PUBLIC_BOOKING_RATE', JSON.stringify(rate));
-    // Связываем одноразовый токен с requestId сами: у Cloudflare защита от
-    // повторного использования токена может сработать не мгновенно.
-    properties.setProperty(usedKey, JSON.stringify({ requestId: booking.requestId, createdAt: now }));
   } finally { lock.releaseLock(); }
 }
 

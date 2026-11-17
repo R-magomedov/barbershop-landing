@@ -385,8 +385,6 @@ a {
   clip-path: inset(50%);
 }
 
-.booking__challenge { min-width: 0; }
-.booking__challenge .booking__label { margin-bottom: 8px; }
 .booking__retry {
   margin-top: 8px;
   padding: 10px 14px;

@@ -18,26 +18,26 @@ test('POST проверяет подтверждение именно нашей
     assert.equal(options.method, 'POST');
     assert.equal(options.credentials, 'omit');
     const body = JSON.parse(options.body);
-    assert.equal(body.turnstileToken, 'dummy');
+    assert.equal('turnstileToken' in body, false);
     assert.equal(body.action, 'book');
     assert.equal('testToken' in body, false);
     return { ok: true, json: async () => answer };
   };
   try {
-    assert.equal((await submitBooking(booking, 'dummy')).eventId, 'test');
+    assert.equal((await submitBooking(booking)).eventId, 'test');
     for (const patch of [{ requestId: 'other' }, { date: '2026-11-18' }, { time: '14:00' }, { serviceId: 'edging' }, { timeZone: 'UTC' }, { eventId: '' }]) {
       answer = { ...valid, booking: { ...valid.booking, ...patch } };
-      await assert.rejects(submitBooking(booking, 'dummy'));
+      await assert.rejects(submitBooking(booking));
     }
     answer = { ...valid, replayed: undefined };
-    await assert.rejects(submitBooking(booking, 'dummy'));
+    await assert.rejects(submitBooking(booking));
     for (const code of ['SLOT_UNAVAILABLE', 'CHALLENGE_FAILED', 'RATE_LIMITED', 'SERVICE_UNAVAILABLE', 'BOOKING_UNCERTAIN']) {
       answer = { ok: false, code };
-      await assert.rejects(submitBooking(booking, 'dummy'), (error) => error instanceof BookingError && error.code === code);
+      await assert.rejects(submitBooking(booking), (error) => error instanceof BookingError && error.code === code);
     }
     globalThis.fetch = async () => ({ ok: false });
-    await assert.rejects(submitBooking(booking, 'dummy'));
+    await assert.rejects(submitBooking(booking));
     globalThis.fetch = async () => { throw new TypeError('Network failure'); };
-    await assert.rejects(submitBooking(booking, 'dummy'));
+    await assert.rejects(submitBooking(booking));
   } finally { globalThis.fetch = originalFetch; }
 });

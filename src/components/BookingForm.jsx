@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import BookingCalendar from './BookingCalendar';
-import BookingChallenge from './BookingChallenge';
 import { BOOKING_SERVICES, isDateAvailable, isTimeAvailable } from '../bookingSchedule';
 import { useAvailableSlots } from '../useAvailableSlots';
 import { BookingError, submitBooking } from '../bookingApi';
@@ -15,8 +14,6 @@ const BookingForm = () => {
   const [submitError, setSubmitError] = useState('');
   const [uncertainAttempt, setUncertainAttempt] = useState(false);
   const [confirmed, setConfirmed] = useState(null);
-  const [challengeToken, setChallengeToken] = useState('');
-  const [challengeReset, setChallengeReset] = useState(0);
   const attempt = useRef(null);
   const sending = useRef(false);
   const controller = useRef(null);
@@ -82,10 +79,6 @@ const BookingForm = () => {
       window.requestAnimationFrame(() => formElement.querySelector('[aria-invalid="true"]')?.focus());
       return;
     }
-    if (!challengeToken && !isRetry) {
-      setSubmitError('Пройдите проверку безопасности перед отправкой.');
-      return;
-    }
 
     // После ошибки сети повторяем тот же requestId, пока данные не изменились.
     // Сервер вернёт прежнее подтверждение вместо создания второго события.
@@ -97,7 +90,7 @@ const BookingForm = () => {
     controller.current = new AbortController();
     const timeout = window.setTimeout(() => controller.current?.abort(), 30000);
     try {
-      const booking = await submitBooking({ ...payload, requestId: attempt.current.requestId }, challengeToken, controller.current.signal);
+      const booking = await submitBooking({ ...payload, requestId: attempt.current.requestId }, controller.current.signal);
       if (!mounted.current) return;
       setConfirmed(booking);
       setUncertainAttempt(false);
@@ -119,9 +112,6 @@ const BookingForm = () => {
       sending.current = false;
       if (mounted.current) {
         setIsSubmitting(false);
-        setChallengeToken('');
-        // Turnstile-токен одноразовый: после каждой отправки получаем новый.
-        setChallengeReset((value) => value + 1);
         window.requestAnimationFrame(() => resultRef.current?.focus());
       }
     }
@@ -159,8 +149,7 @@ const BookingForm = () => {
               <input id="booking-website" name="website" tabIndex={-1} autoComplete="off" value={form.website} onChange={(event) => updateField('website', event.target.value)} />
             </div>
             <BookingCalendar date={form.date} time={form.time} serviceId={form.service} onDateChange={changeDate} onTimeChange={(time) => updateField('time', time)} errors={errors} now={now} availability={availability} onReload={() => { updateField('time', ''); availability.reload(); }} />
-            <BookingChallenge resetKey={challengeReset} onToken={setChallengeToken} />
-            <button type="submit" className="btn btn--primary btn--full" disabled={isSubmitting || (!challengeToken && !uncertainAttempt)}>
+            <button type="submit" className="btn btn--primary btn--full" disabled={isSubmitting}>
               {isSubmitting && <span className="booking__spinner" aria-hidden="true" />}
               {isSubmitting ? 'Отправляем…' : uncertainAttempt ? 'Проверить заявку' : 'Записаться'}
             </button>
